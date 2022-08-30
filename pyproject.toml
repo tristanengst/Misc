@@ -29,7 +29,3 @@ install_requires = [
 
 [project.urls]
 "Homepage" = "https://github.com/tristanengst/apex-utils"
-
-[pypi]
-username = "__token__"
-password = "pypi-AgEIcHlwaS5vcmcCJDM0MjA5MDU5LTA1MDItNDcyNy05MzJkLWM5ZGU4OWI3Y2VkYwACKlszLCI2ZmM2MTFlNS1kMjNkLTQ0ZTAtYmJjOS1hZTJmZGYxODE2NDEiXQAABiB90EakQxBbmYF5RbCDxmEk1fq7Yqy47MuMSKMkFcufUg"
