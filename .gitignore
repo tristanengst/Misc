@@ -1,7 +1,5 @@
 # Custom
-ComputeCanadaLogging/DataStorage/*.json
-ComputeCanadaLogging/*.txt
-
+*.pth
 
 
 
