@@ -25,6 +25,7 @@ install_requires = [
     "matplotlib",
     "gdown",
     "lmdb",
+    "tqdm",
 ]
 
 [project.urls]
