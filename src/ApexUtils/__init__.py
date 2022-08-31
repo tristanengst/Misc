@@ -16,5 +16,6 @@ from .DebuggingUtils import *
 from .IOUtils import *
 from .LMDBUtils import *
 from .LPIPSUtils import *
+from .MiscUtils import *
 from .NNUtils import *
 from .TensorManipulation import *

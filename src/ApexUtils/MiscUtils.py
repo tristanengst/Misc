@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import random
+from tqdm import tqdm
 
 def set_seed(seed):
     """Seeds the program to use seed [seed]."""
