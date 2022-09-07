@@ -59,14 +59,17 @@ def has_image_extension(x):
     x = x.lower()
     return x.endswith(".jpg") or x.endswith(".png") or x.endswith(".jpeg")
 
+def get_random_string(length=16):
+    """Returns a random ASCII string of length [length]."""
+    letters = string.ascii_lowercase
+    return "".join(random.choice(letters) for i in range(rand_length))
+
 def get_temporary_storage_folder(rand_length=16):
     """Returns and creates a folder for temporary storage. Functions using this
     should delete the folder prior to returning. Normally, this would just be
     the /tmp directory, but this isn't available on ComputeCanada.
     """
-    letters = string.ascii_lowercase
-    random_str = "".join(random.choice(letters) for i in range(rand_length))
-    folder = f"{os.path.dirname(__file__)}/tmp_storage_{random_str}"
+    folder = f"{os.path.dirname(__file__)}/tmp_storage_{get_random_string()}"
     if not os.path.exists(folder):
         os.makedirs(folder)
     return folder
@@ -89,7 +92,7 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
             os.makedirs(f"{tmp_dir}/{image_dir}")
         image_file = f"{tmp_dir}/{k}"
         _ = read_image_from_lmdb(x, k).save(image_file)
-        write_to_lmdb(y, image_file, store_image=store_image)
+        write_to_lmdb(y, image_file, store_image=store_image, tmp_dir=tmp_dir)
         os.remove(image_file)
 
     shutil.rmtree(tmp_dir)
@@ -118,7 +121,8 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     """Writes the key-value pair ([key], [value]) to [lmdb_file]. If [lmdb_file]
     does not exist, it is created, and resizing if necessary is supported.
 
-    WARNING: This function isn't thread safe, but, it's a reasonable LMDB API.
+    WARNING: This function isn't thread safe or parallelizable, but it's a
+    reasonable LMDB API.
 
     Args:
     lmdb_file   -- file or environment to write [key] and [value] to
@@ -129,7 +133,11 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
                     assumed to be a path to the image. Otherwise, it will be
                     encoded as ASCII and stored directly.
     store_image -- whether to interpret [value] as an image
-    tmp_dir     -- directory for temporary storage. Use '/tmp' if possible.
+    tmp_dir     -- directory to store images during writing. If None, it will be
+                    created and removed while this function executes. Otherwise,
+                    it will be used, files in it may be overwritten, and it
+                    won't be deleted. This argument should be specified whenever
+                    an existing temporary directory is already in use.
     """
     def _write_lmdb_img(env, image, key=None):
         """Writes the image stored at file [image] to LMDB dataset open for
@@ -155,6 +163,7 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     # Get and create the folder to which we'll temporarily store the images
     # during copying, and the fixed path we'll use for this.
     ############################################################################
+    should_erase_tmp_dir = (tmp_dir is None)
     tmp_dir = get_temporary_storage_folder() if tmp_dir is None else tmp_dir
     tmp_image = f"{tmp_dir}/image.jpg"
 
@@ -208,7 +217,8 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
         env.set_mapsize(env.info()["map_size"] * 10)
         write_to_lmdb(env, key, value)
 
-    shutil.rmtree(tmp_dir)
+    if should_erase_tmp_dir:
+        shutil.rmtree(tmp_dir)
 
 
 def read_image_from_lmdb(lmdb_file, key):
@@ -447,7 +457,7 @@ def all_image_folders_to_lmdb(source, replacing_path=None):
     tqdm.write("-------------------------------------------")
 
 
-def merge_lmdb_files(lmdb_file_list, out_path, tmp_image_dir=f"./tmp_images"):
+def merge_lmdb_files(lmdb_file_list, out_path):
     """Concatenates the files in [lmdb_file_list] into one at [out_oath].
     [lmdb_file_list] can be a
 
@@ -459,28 +469,13 @@ def merge_lmdb_files(lmdb_file_list, out_path, tmp_image_dir=f"./tmp_images"):
     else:
         raise ValueError()
 
-    num_bytes = 0
-    for lmdb_file in lmdb_file_list:
-        env = lmdb.open(lmdb_file, readonly=True, lock=False, readahead=False,
-            meminit=False)
-        with env.begin(write=False) as txn:
-            keys = txn.get("keys".encode("ascii"))
-            keys = sorted([k for k in keys.decode("ascii").split(",")])
-        num_bytes += np.sum([np.array(read_image_from_lmdb(env, k), dtype=np.uint8).nbytes
-            for k in keys])
-
-    if not os.path.exists(tmp_image_dir):
-        os.makedirs(tmp_image_dir)
-    out_env = lmdb.open(out_path, map_size=num_bytes * 10)
     for lmdb_file in tqdm(lmdb_file_list,
         desc="Reading LMDB files",
         dynamic_ncols=True):
 
         read_env = lmdb.open(lmdb_file, readonly=True, lock=False,
             readahead=False, meminit=False)
-        out_env = copy_lmdb_into_lmdb(read_env, out_env, tmp_image_dir=tmp_image_dir)
-
-    shutil.rmtree(tmp_image_dir)
+        _ = copy_lmdb_into_lmdb(read_env, out_path)
 
 if __name__ == "__main__":
     P = argparse.ArgumentParser()
