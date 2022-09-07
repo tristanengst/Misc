@@ -108,8 +108,13 @@ def lmdb_to_keys(lmdb_file):
         raise ValueError()
 
     with env.begin(write=False) as txn:
-        keys = txn.get("keys".encode("ascii"))
-        return keys.decode("ascii").split(",")
+        all_lmdb_keys = [k for k,_ in txn.cursor()]
+
+        if len(all_lmdb_keys) == 0 or all_lmdb_keys == ["keys"]:
+            return []
+        else:
+            keys = txn.get("keys".encode("ascii"))
+            return keys.decode("ascii").split(",")
 
 ################################################################################
 # Core functions that are part of the API.
