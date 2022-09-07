@@ -91,6 +91,7 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
 
     keys = lmdb_to_keys(x)
     for k in tqdm(keys,
+        leave=False,
         desc="Copying contents of one LMDB to another",
         dynamic_ncols=True):
 
