@@ -62,14 +62,15 @@ def has_image_extension(x):
 def get_random_string(length=16):
     """Returns a random ASCII string of length [length]."""
     letters = string.ascii_lowercase
-    return "".join(random.choice(letters) for i in range(rand_length))
+    return "".join(random.choice(letters) for i in range(length))
 
-def get_temporary_storage_folder(rand_length=16):
+def get_temporary_storage_folder(length=16):
     """Returns and creates a folder for temporary storage. Functions using this
     should delete the folder prior to returning. Normally, this would just be
     the /tmp directory, but this isn't available on ComputeCanada.
     """
-    folder = f"{os.path.dirname(__file__)}/tmp_storage_{get_random_string()}"
+    rand_str = get_random_string(length)
+    folder = f"{os.path.dirname(__file__)}/tmp_storage_{rand_str}"
     if not os.path.exists(folder):
         os.makedirs(folder)
     return folder
