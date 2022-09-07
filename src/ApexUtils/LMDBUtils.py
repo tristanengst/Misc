@@ -65,7 +65,7 @@ def get_temporary_storage_folder(rand_length=16):
     the /tmp directory, but this isn't available on ComputeCanada.
     """
     letters = string.ascii_lowercase
-    random_str = "".join(random.choice(letters) for i in range(length))
+    random_str = "".join(random.choice(letters) for i in range(rand_length))
     folder = f"{os.path.dirname(__file__)}/tmp_storage_{random_str}"
     if not os.path.exists(folder):
         os.makedirs(folder)
