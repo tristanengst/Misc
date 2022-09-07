@@ -171,7 +171,7 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
         key = f"{os.path.basename(os.path.dirname(key))}/{os.path.basename(key)}"
     elif store_image and isinstance(value, str):
         shutil.copyfile(value, tmp_image)
-    elif store_image and isinstance(value, Image):
+    elif store_image and isinstance(value, Image.Image):
         raise NotImplementedError()
     elif (store_image and isinstance(value, torch.Tensor)
         and len(value.shape) == 3 and value.shape[0] == 3):
