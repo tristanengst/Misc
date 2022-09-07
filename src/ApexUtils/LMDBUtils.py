@@ -95,7 +95,7 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
     shutil.rmtree(tmp_dir)
     return y
 
-def lmdb_to_keys(lmdb_file):
+def lmdb_to_keys(lmdb_file, images_only=True):
     """Returns the list of keys in [lmdb_file]. [lmdb_file] can be either the
     path to an LMDB file, or an LMDB file opened for reading.
     """
@@ -108,15 +108,8 @@ def lmdb_to_keys(lmdb_file):
         raise ValueError()
 
     with env.begin(write=False) as txn:
-        all_lmdb_keys = [k.decode("ascii") for k,_ in txn.cursor()]
-
-        if len(all_lmdb_keys) == 0 or all_lmdb_keys == ["keys"]:
-            return []
-        else:
-            print(all_lmdb_keys)
-            print("-------------------")
-            keys = txn.get("keys".encode("ascii"))
-            return keys.decode("ascii").split(",")
+        keys = [k.decode("ascii") for k,_ in txn.cursor()]
+        return [k for k in keys if not k.endswith(".dims") and not k == "keys"]
 
 ################################################################################
 # Core functions that are part of the API.
