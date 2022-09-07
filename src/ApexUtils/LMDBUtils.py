@@ -19,6 +19,7 @@ from tqdm import tqdm
 import lmdb
 from torch.utils.data import Dataset
 from torchvision.utils import save_image
+from torchvision.transforms.functional import to_tensor
 from PIL import Image
 import shutil
 import glob
@@ -180,8 +181,7 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     elif store_image and isinstance(value, str):
         shutil.copyfile(value, tmp_image)
     elif store_image and isinstance(value, Image.Image):
-        value = torch.from_numpy(np.array(image).transpose(2, 0, 1))
-        save_image(value, tmp_image)
+        save_image(to_tensor(value), tmp_image)
     elif (store_image and isinstance(value, torch.Tensor)
         and len(value.shape) == 3 and value.shape[0] == 3):
         save_image(value, tmp_image)
