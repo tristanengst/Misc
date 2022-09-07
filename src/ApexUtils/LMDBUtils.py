@@ -1,11 +1,16 @@
-"""Source code for working with LMDB files.
+"""Code for working with LMDB files.
 
-USAGE:
-python UtilsLMDB
-    --data_dirs containers_of_imagefolders_to_convert # accepts glob!
-    --enclosing_dir directory_to_write_outputs_inside_with_file_structure_of_input
-    --new_name replace_the_common_substring_in_the_basenames_of_folders_in_--data_dirs_with_this
+--------------------------------------------------------------------------------
+The files have the following properties:
+(1) They are assumed to store a key-value mapping, with a special key 'keys'
+    giving a string of all the other keys, separated by commas
+(2) Each represents a folder compatible with TorchVision's ImageFolder class,
+    ie. keys are of the form 'class/file'.
 
+--------------------------------------------------------------------------------
+The functions herein in general have the following properties:
+(1) They are agnostic to whether passed-in LMDB "files" are opened LMDB
+    environments or simply the paths to the LMDB files themselves.
 """
 import argparse
 import numpy as np
@@ -13,21 +18,23 @@ import os
 from tqdm import tqdm
 import lmdb
 from torch.utils.data import Dataset
+from torchvision.utils import save_image
 from PIL import Image
 import shutil
 import glob
+import torch
 
+import random
+import string
+
+################################################################################
+# Miscellaneous utility functions.
+################################################################################
 def lmdb_file_contains_augs(lmdb_file):
     """Returns if LMDB file [lmdb_file] contains images that should be
     interpreted as augmentations rather than images in their own right.
     """
-    env = lmdb.open(lmdb_file, readonly=True, lock=False, readahead=False,
-        meminit=False)
-    with env.begin(write=False) as txn:
-        keys = txn.get("keys".encode("ascii"))
-        keys = [k for k in keys.decode("ascii").split(",")]
-
-    return any(["_aug" in k for k in keys])
+    return any(["_aug" in k for k in lmdb_to_keys(lmdb_file)])
 
 def longest_common_starting_substring(l):
     """Returns the longest common substring in strings in list [l], with all
@@ -47,7 +54,164 @@ def is_image(f):
     """Returns if file [f] is an image."""
     return any([f.lower().endswith(e) for e in [".png", ".jpg", ".jpeg"]])
 
-def _read_lmdb_img(env, key):
+def has_image_extension(x):
+    """Returns if [x] ends with an image file extension."""
+    x = x.lower()
+    return x.endswith(".jpg") or x.endswith(".png") or x.endswith(".jpeg")
+
+def get_temporary_storage_folder(rand_length=16):
+    """Returns and creates a folder for temporary storage. Functions using this
+    should delete the folder prior to returning. Normally, this would just be
+    the /tmp directory, but this isn't available on ComputeCanada.
+    """
+    letters = string.ascii_lowercase
+    random_str = "".join(random.choice(letters) for i in range(length))
+    folder = f"{os.path.dirname(__file__)}/tmp_storage_{random_str}"
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    return folder
+
+def copy_lmdb_into_lmdb(x, y, store_image=True):
+    """Returns LMDB environment [y] after copying the contents of LMDB
+    environment [x] into it. [store_image] should be set to indicate whether the
+    copied data is an image or not.
+    """
+    # Temporary directory to write images to while copying. The directory is
+    # removed at the end of the function, and uses random string in its name so
+    # it will be used for and removed by only its invocation of
+    # copy_lmdb_into_lmdb().
+    tmp_dir = get_temporary_storage_folder()
+
+    keys = lmdb_to_keys(x)
+    for k in keys:
+        image_dir = os.path.dirname(k)
+        if not os.path.exists(f"{tmp_dir}/{image_dir}"):
+            os.makedirs(f"{tmp_dir}/{image_dir}")
+        image_file = f"{tmp_dir}/{k}"
+        _ = read_image_from_lmdb(x, k).save(image_file)
+        write_to_lmdb(y, image_file, store_image=store_image)
+        os.remove(image_file)
+
+    shutil.rmtree(tmp_dir)
+    return y
+
+def lmdb_to_keys(lmdb_file):
+    """Returns the list of keys in [lmdb_file]. [lmdb_file] can be either the
+    path to an LMDB file, or an LMDB file opened for reading.
+    """
+    if isinstance(lmdb_file, str) and lmdb_file.endswith(".lmdb")
+        env = lmdb.open(lmdb_file, readonly=True, lock=False, readahead=False,
+            meminit=False)
+    elif isinstance(lmdb_file, lmdb.Environment):
+        env = lmdb_file
+    else:
+        raise ValueError()
+
+    with lmdb_file.begin(write=False) as txn:
+        keys = txn.get("keys".encode("ascii"))
+        return keys.decode("ascii").split(",")
+
+################################################################################
+# Core functions that are part of the API.
+################################################################################
+def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
+    """Writes the key-value pair ([key], [value]) to [lmdb_file]. If [lmdb_file]
+    does not exist, it is created, and resizing if necessary is supported.
+
+    WARNING: This function isn't thread safe, but, it's a reasonable LMDB API.
+
+    Args:
+    lmdb_file   -- file or environment to write [key] and [value] to
+    key         -- the key to write, with form 'class/name'
+    value       -- the value to write to [key]. If [store_image] is specified,
+                    then this can be any of (a) a path to an image, (b) a PIL
+                    image, (c) a CxHxW tensor, (d) None, in which [key] is
+                    assumed to be a path to the image. Otherwise, it will be
+                    encoded as ASCII and stored directly.
+    store_image -- whether to interpret [value] as an image
+    tmp_dir     -- directory for temporary storage. Use '/tmp' if possible.
+    """
+    def _write_lmdb_img(env, image, key=None):
+        """Writes the image stored at file [image] to LMDB dataset open for
+        writing [env] with key [key] if [key] isn't None, or otherwise the name
+        and parent folder of [image].
+        """
+        img_name = os.path.basename(image)
+        img_dir = os.path.dirname(image)
+        key = f"{os.path.basename(img_dir)}/{img_name}" if key is None else key
+
+        image = np.array(Image.open(image), dtype=np.uint8)
+        dims = " ".join([f"{d:d}" for d in image.shape])
+        with env.begin(write=True) as txn:
+            txn.put(key.encode("ascii"), image)
+            txn.put(f"{key}.dims".encode("ascii"), dims.encode("ascii"))
+
+        keys = set(lmdb_to_keys(env) + [key])
+        keys = ",".join(keys)
+        with env.begin(write=True) as txn:
+            txn.put("keys".encode("ascii"), keys.encode("ascii"))
+
+    ############################################################################
+    # Get and create the folder to which we'll temporarily store the images
+    # during copying, and the fixed path we'll use for this.
+    ############################################################################
+    tmp_dir = get_temporary_storage_folder() if tmp_dir is None else tmp_dir
+    tmp_image = f"{tmp_dir}/image.jpg"
+
+    ############################################################################
+    # Move the image we want to store to [tmp_image] and optionally modify [key]
+    # if needed.
+    ############################################################################
+    if (store_image and value is None and os.path.exists(key)
+        and has_image_extension(key)):
+        # In this case, [key] is a path to the image to store. We need to copy
+        # it to the path whose contents will be written into the LMDB file, and
+        # extract the proper key to use for this.
+        shutil.copyfile(key, tmp_image)
+        key = f"{os.path.basename(os.path.dirname(key))}/{os.path.basename(key)}"
+    elif store_image and isinstance(value, str):
+        shutil.copyfile(value, tmp_image)
+    elif store_image and isinstance(value, Image):
+        raise NotImplementedError()
+    elif (store_image and isinstance(value, torch.Tensor)
+        and len(value.shape) == 3 and value.shape[0] == 3):
+        save_image(value, tmp_image)
+    elif (store_image and isinstance(value, torch.Tensor)
+        and len(value.shape) == 4 and value.shape[0] == 1
+        and value.shape[1] == 3):
+        save_image(value.squeeze(0), tmp_image)
+    elif not store_image:
+        raise NotImplementedError()
+    else:
+        raise ValueError(f"Could not match image: {image}")
+
+    ############################################################################
+    # Open the LMDB file we want to write the image to.
+    ############################################################################
+    if isinstance(lmdb_file, str) and os.path.exists(lmdb_file):
+        env = lmdb.open(lmdb_file)
+    elif isinstance(lmdb_file, str) not os.path.exists(lmdb_file):
+        env = lmdb.open(lmdb_file, map_size=8192)
+    elif isinstance(lmdb_file, lmdb.Environment):
+        env = lmdb_file
+    else:
+        raise ValueError(f"Unmatched case")
+
+    ############################################################################
+    # Try and copy the contents of [tmp_image] to the opened LMDB file. If this
+    # fails due to the LMDB file not being big enough, try again after enlarging
+    # the LMDB file.
+    ############################################################################
+    try:
+        _write_lmdb_img(env, tmp_image, key=key)
+    except lmdb.MapFullError as e:
+        env.set_mapsize(env.info()["map_size"] * 10)
+        write_to_lmdb(env, key, value)
+
+    shutil.rmtree(tmp_dir)
+
+
+def read_image_from_lmdb(env, key):
     """Returns a PIL image from [key] in opened LMDB file [env]."""
     with env.begin(write=False) as txn:
         buf = txn.get(key.encode("ascii"))
@@ -56,23 +220,6 @@ def _read_lmdb_img(env, key):
     h, w, c = [int(s) for s in buf_dims.split()]
     img = img_flat.reshape(h, w, c)
     return Image.fromarray(img)
-
-def _write_lmdb_img(env, image):
-    """Writes the image at [image] to LMDB dataset open for writing with
-    [env], and returns the key under which the image can be found in the LMDB
-    dataset.
-    """
-    with env.begin(write=True) as txn:
-        img_name = os.path.basename(image)
-        img_dir = os.path.dirname(image)
-        key = f"{os.path.basename(img_dir)}/{img_name}"
-
-        image = np.array(Image.open(image), dtype=np.uint8)
-        dims = " ".join([f"{d:d}" for d in image.shape])
-        txn.put(key.encode("ascii"), image)
-        txn.put(f"{key}.dims".encode("ascii"), dims.encode("ascii"))
-
-    return key
 
 class LMDBImageFolder(Dataset):
     """A near drop-in replacement for an ImageFolder, but reads from a single
@@ -105,22 +252,22 @@ class LMDBImageFolder(Dataset):
 
         tqdm.write(f"LOG: Constructed LMDBImageFolder over {source}")
 
-    def loader(self):
-        def _loader(key):
-            with env.begin(write=False) as txn:
-                buf = txn.get(key.encode("ascii"))
-                buf_dims = txn.get(f"{key}.dims".encode("ascii")).decode("ascii")
-            img_flat = np.frombuffer(buf, dtype=np.uint8)
-            h, w, c = [int(s) for s in buf_dims.split()]
-            img = img_flat.reshape(h, w, c)
-            return Image.fromarray(img)
+    def loader(self, key):
+        """Returns a PIL image from [self] given its key."""
+        with self.env.begin(write=False) as txn:
+            buf = txn.get(key.encode("ascii"))
+            buf_dims = txn.get(f"{key}.dims".encode("ascii")).decode("ascii")
+        img_flat = np.frombuffer(buf, dtype=np.uint8)
+        h, w, c = [int(s) for s in buf_dims.split()]
+        x = img_flat.reshape(h, w, c)
+        return Image.fromarray(x)
 
     def __len__(self): return len(self.samples)
 
     def __getitem__(self, idx):
         key, y = self.samples[idx]
 
-        # Function inlining to increase speed. Equivalent to _read_lmdb_img().
+        # Function inlining to increase speed. Equivalent to read_image_from_lmdb().
         with self.env.begin(write=False) as txn:
             buf = txn.get(key.encode("ascii"))
             buf_dims = txn.get(f"{key}.dims".encode("ascii")).decode("ascii")
@@ -232,14 +379,11 @@ def image_folder_to_lmdb(source, out_path, fix_images=True, res=None):
     ############################################################################
     tqdm.write(f"\tLOG: Will write output LMDB file to {out_path}")
     env = lmdb.open(out_path, map_size=num_bytes * 10)
-    keys = [_write_lmdb_img(env, image) for image in tqdm(images,
+    for image in tqdm(images,
         desc="Writing to LMDB file",
         leave=False,
-        dynamic_ncols=True)]
-
-    keys = ",".join(keys)
-    with env.begin(write=True) as txn:
-        txn.put("keys".encode("ascii"), keys.encode("ascii"))
+        dynamic_ncols=True):
+        write_to_lmdb(env, image)
 
     if fix_images:
         shutil.rmtree(fixed_image_dir)
@@ -309,16 +453,14 @@ def merge_lmdb_files(lmdb_file_list, out_path, tmp_image_dir=f"./tmp_images"):
         raise ValueError()
 
     num_bytes = 0
-    all_keys = []
     for lmdb_file in lmdb_file_list:
         env = lmdb.open(lmdb_file, readonly=True, lock=False, readahead=False,
             meminit=False)
         with env.begin(write=False) as txn:
             keys = txn.get("keys".encode("ascii"))
             keys = sorted([k for k in keys.decode("ascii").split(",")])
-        num_bytes += np.sum([np.array(_read_lmdb_img(env, k), dtype=np.uint8).nbytes
+        num_bytes += np.sum([np.array(read_image_from_lmdb(env, k), dtype=np.uint8).nbytes
             for k in keys])
-        all_keys += keys
 
     if not os.path.exists(tmp_image_dir):
         os.makedirs(tmp_image_dir)
@@ -329,21 +471,7 @@ def merge_lmdb_files(lmdb_file_list, out_path, tmp_image_dir=f"./tmp_images"):
 
         read_env = lmdb.open(lmdb_file, readonly=True, lock=False,
             readahead=False, meminit=False)
-        with read_env.begin(write=False) as txn:
-            keys = txn.get("keys".encode("ascii"))
-            keys = sorted([k for k in keys.decode("ascii").split(",")])
-        for k in keys:
-            image_dir = os.path.dirname(k)
-            if not os.path.exists(f"{tmp_image_dir}/{image_dir}"):
-                os.makedirs(f"{tmp_image_dir}/{image_dir}")
-            image_file = f"{tmp_image_dir}/{k}"
-            _ = _read_lmdb_img(read_env, k).save(image_file)
-            _write_lmdb_img(out_env, image_file)
-            os.remove(image_file)
-
-    all_keys = ",".join(all_keys)
-    with out_env.begin(write=True) as txn:
-        txn.put("keys".encode("ascii"), all_keys.encode("ascii"))
+        out_env = copy_lmdb_into_lmdb(read_env, out_env, tmp_image_dir=tmp_image_dir)
 
     shutil.rmtree(tmp_image_dir)
 
