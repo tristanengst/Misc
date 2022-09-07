@@ -93,6 +93,9 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
             os.makedirs(f"{tmp_dir}/{image_dir}")
         image_file = f"{tmp_dir}/{k}"
         _ = read_image_from_lmdb(x, k).save(image_file)
+
+        assert os.path.exists(image_file)
+
         write_to_lmdb(y, image_file, store_image=store_image, tmp_dir=tmp_dir)
         os.remove(image_file)
 
