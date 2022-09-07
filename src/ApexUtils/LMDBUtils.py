@@ -193,7 +193,7 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     elif not store_image:
         raise NotImplementedError()
     else:
-        raise ValueError(f"Could not match image: {tmp_image} | store_image {store_image} | value {value} | {key} ")
+        raise ValueError(f"Could not match image: {tmp_image} | store_image {store_image} | value {value} | {key} | {os.path.exists(key)}")
 
     ############################################################################
     # Open the LMDB file we want to write the image to.
