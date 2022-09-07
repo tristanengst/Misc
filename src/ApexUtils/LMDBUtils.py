@@ -107,7 +107,7 @@ def lmdb_to_keys(lmdb_file):
     else:
         raise ValueError()
 
-    with lmdb_file.begin(write=False) as txn:
+    with env.begin(write=False) as txn:
         keys = txn.get("keys".encode("ascii"))
         return keys.decode("ascii").split(",")
 
@@ -213,6 +213,13 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
 
 def read_image_from_lmdb(env, key):
     """Returns a PIL image from [key] in opened LMDB file [env]."""
+    if isinstance(lmdb_file, str) and os.path.exists(lmdb_file):
+        env = lmdb.open(lmdb_file)
+    elif isinstance(lmdb_file, lmdb.Environment):
+        env = lmdb_file
+    else:
+        raise ValueError(f"Unmatched case")
+
     with env.begin(write=False) as txn:
         buf = txn.get(key.encode("ascii"))
         buf_dims = txn.get(f"{key}.dims".encode("ascii")).decode("ascii")
