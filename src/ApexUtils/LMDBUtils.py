@@ -88,7 +88,8 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
 
     keys = lmdb_to_keys(x)
     for k in keys:
-        image = read_image_from_lmdb(x, k).save(image_file)
+        image = read_image_from_lmdb(x, k)
+        print(image)
         write_to_lmdb(y, k, value=image,
             store_image=store_image,
             tmp_dir=tmp_dir)
