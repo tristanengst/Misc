@@ -113,6 +113,8 @@ def lmdb_to_keys(lmdb_file):
         if len(all_lmdb_keys) == 0 or all_lmdb_keys == ["keys"]:
             return []
         else:
+            print(all_lmdb_keys)
+            print("-------------------")
             keys = txn.get("keys".encode("ascii"))
             return keys.decode("ascii").split(",")
 
