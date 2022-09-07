@@ -211,8 +211,8 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     shutil.rmtree(tmp_dir)
 
 
-def read_image_from_lmdb(env, key):
-    """Returns a PIL image from [key] in opened LMDB file [env]."""
+def read_image_from_lmdb(lmdb_file, key):
+    """Returns a PIL image from [key] in opened LMDB file [lmdb_file]."""
     if isinstance(lmdb_file, str) and os.path.exists(lmdb_file):
         env = lmdb.open(lmdb_file)
     elif isinstance(lmdb_file, lmdb.Environment):
