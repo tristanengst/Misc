@@ -108,7 +108,7 @@ def lmdb_to_keys(lmdb_file):
         raise ValueError()
 
     with env.begin(write=False) as txn:
-        all_lmdb_keys = [k for k,_ in txn.cursor()]
+        all_lmdb_keys = [k.decode("ascii") for k,_ in txn.cursor()]
 
         if len(all_lmdb_keys) == 0 or all_lmdb_keys == ["keys"]:
             return []
