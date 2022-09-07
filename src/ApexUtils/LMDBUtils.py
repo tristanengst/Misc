@@ -99,7 +99,7 @@ def lmdb_to_keys(lmdb_file):
     """Returns the list of keys in [lmdb_file]. [lmdb_file] can be either the
     path to an LMDB file, or an LMDB file opened for reading.
     """
-    if isinstance(lmdb_file, str) and lmdb_file.endswith(".lmdb")
+    if isinstance(lmdb_file, str) and lmdb_file.endswith(".lmdb"):
         env = lmdb.open(lmdb_file, readonly=True, lock=False, readahead=False,
             meminit=False)
     elif isinstance(lmdb_file, lmdb.Environment):
