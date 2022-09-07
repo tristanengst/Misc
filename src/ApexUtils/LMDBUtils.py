@@ -83,10 +83,6 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
 
     This is relatively slow, but the API is reasonable.
     """
-    # Temporary directory to write images to while copying. The directory is
-    # removed at the end of the function, and uses random string in its name so
-    # it will be used for and removed by only its invocation of
-    # copy_lmdb_into_lmdb().
     tmp_dir = get_temporary_storage_folder()
 
     keys = lmdb_to_keys(x)
