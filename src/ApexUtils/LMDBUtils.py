@@ -190,7 +190,7 @@ def write_to_lmdb(lmdb_file, key, value=None, store_image=True, tmp_dir=None):
     ############################################################################
     if isinstance(lmdb_file, str) and os.path.exists(lmdb_file):
         env = lmdb.open(lmdb_file)
-    elif isinstance(lmdb_file, str) not os.path.exists(lmdb_file):
+    elif isinstance(lmdb_file, str) and not os.path.exists(lmdb_file):
         env = lmdb.open(lmdb_file, map_size=8192)
     elif isinstance(lmdb_file, lmdb.Environment):
         env = lmdb_file
