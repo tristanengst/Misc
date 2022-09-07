@@ -80,6 +80,8 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
     """Returns LMDB environment [y] after copying the contents of LMDB
     environment [x] into it. [store_image] should be set to indicate whether the
     copied data is an image or not.
+
+    This is relatively slow, but the API is reasonable.
     """
     # Temporary directory to write images to while copying. The directory is
     # removed at the end of the function, and uses random string in its name so
@@ -88,10 +90,12 @@ def copy_lmdb_into_lmdb(x, y, store_image=True):
     tmp_dir = get_temporary_storage_folder()
 
     keys = lmdb_to_keys(x)
-    for k in keys:
-        image = read_image_from_lmdb(x, k)
-        print(image)
-        write_to_lmdb(y, k, value=image,
+    for k in tqdm(keys,
+        desc="Copying contents of one LMDB to another",
+        dynamic_ncols=True):
+
+        write_to_lmdb(y, k,
+            value=read_image_from_lmdb(x, k),
             store_image=store_image,
             tmp_dir=tmp_dir)
 
