@@ -119,7 +119,7 @@ def lmdb_to_keys(lmdb_file, images_only=True):
         raise ValueError()
 
     with env.begin(write=False) as txn:
-        keys = [k.decode("ascii") for k,_ in tqdm(txn.cursor().iternext(key=True, value=False), leave=False, desc="Getting LMDB keys")]
+        keys = [k.decode("ascii") for k in tqdm(txn.cursor().iternext(key=True, value=False), leave=False, desc="Getting LMDB keys")]
         return [k for k in keys if not k.endswith(".dims") and not k == "keys"]
 
 ################################################################################
