@@ -20,6 +20,37 @@ def set_seed(seed):
 
     return seed
 
+class KOrKMinusOne:
+    """Class for maintaining a condition on data [idxs] in which for natural
+    number [k], each element has been returned from the pop() method either [k]
+    or [k-1] times, regardless of the number of calls to pop().
+
+    WARNING: This class is not thread-safe.
+
+    Args:
+    idxs    -- list of data points to return, meant to just be numbers
+    shuffle -- whether or not to shuffle the order in which elements of [idx]
+                are returned, while maintaining the condition
+    """
+    def __init__(self, idxs, shuffle=False):
+        self.idxs = idxs
+        self.counter = 0
+        self.shuffle = shuffle
+
+    def pop(self):
+        if self.counter == len(self.idxs):
+            self.counter = 0
+            if self.shuffle:
+                self.idxs = random.sample(self.idxs, k=len(self.idxs))
+            else:
+                self.idxs = self.idxs
+
+        result = self.idxs[self.counter]
+        self.counter += 1
+        return result
+
+    def pop_k(self, k): return [self.pop() for _ in range(k)]
+
 
 def has_resolution(data_str):
     """Returns if [data_str] has a resolution, defined as a substring consisting
