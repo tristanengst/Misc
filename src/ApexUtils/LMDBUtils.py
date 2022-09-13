@@ -31,6 +31,13 @@ import string
 ################################################################################
 # Miscellaneous utility functions.
 ################################################################################
+def is_image_folder(f):
+    """Returns if folder [f] can be interpreted as an ImageFolder."""
+    dirs = [d for d in os.listdir(f) if os.path.isdir(f"{f}/{d}")]
+    return (len(dirs) > 0 and all(
+            [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
+            for d in dirs]))
+
 def lmdb_file_contains_augs(lmdb_file):
     """Returns if LMDB file [lmdb_file] contains images that should be
     interpreted as augmentations rather than images in their own right.
@@ -418,14 +425,6 @@ def all_image_folders_to_lmdb(source, replacing_path=None):
     enclosing_dir -- output directory in which to place results. This directory will
                 have the same file structure as [source] internally
     """
-
-    def is_image_folder(f):
-        """Returns if folder [f] can be interpreted as an ImageFolder."""
-        dirs = [d for d in os.listdir(f) if os.path.isdir(f"{f}/{d}")]
-        return (len(dirs) > 0 and all(
-                [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
-                for d in dirs]))
-
     def get_directory_hierarchy_flat(f):
         """Returns a nested list giving the file hierarchy under folder [f]."""
         result = []
