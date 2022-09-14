@@ -44,11 +44,13 @@ def is_dir(f):
 
 def is_image_folder(f):
     """Returns if folder [f] can be interpreted as an ImageFolder."""
-    f = os.path.abspath(f)
-    dirs = [d for d in os.listdir(f) if is_dir(f"{f}/{d}")]
-    return (len(dirs) > 0 and all(
-            [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
-            for d in dirs]))
+    if is_dir(f):
+        dirs = [d for d in os.listdir(f) if is_dir(f"{f}/{d}")]
+        return (len(dirs) > 0 and all(
+                [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
+                for d in dirs]))
+    else:
+        return False
 
 def lmdb_file_contains_augs(lmdb_file):
     """Returns if LMDB file [lmdb_file] contains images that should be
