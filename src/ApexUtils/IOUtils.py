@@ -19,10 +19,12 @@ new_line = "\n"
 # Strings
 ################################################################################
 def data_without_split_or_path(data_str):
-    """Returns [data_str] without its split."""
+    """Returns [data_str] without its split or path."""
     splits = ["train", "val", "test"]
     if any([data_str.endswith(f"/{s}") for s in splits]):
         return os.path.basename(os.path.dirname(data_str))
+    elif data_str.endswith(".pt"):
+        return data_str.replace(".pt", "")
     else:
         raise ValueError(f"Case for handing data_str {data_str} unknown")
 
