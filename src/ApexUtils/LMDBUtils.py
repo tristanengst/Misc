@@ -31,10 +31,21 @@ import string
 ################################################################################
 # Miscellaneous utility functions.
 ################################################################################
+
+def is_dir(f):
+    try:
+        _ = os.path.listdir(f)
+        return True
+    except NotADirectoryError as e:
+        return False
+    
+    raise ValueError()
+
+
 def is_image_folder(f):
     """Returns if folder [f] can be interpreted as an ImageFolder."""
     f = os.path.abspath(f)
-    dirs = [d for d in os.listdir(f) if os.path.isdir(f"{f}/{d}")]
+    dirs = [d for d in os.listdir(f) if is_dir(f"{f}/{d}")]
     return (len(dirs) > 0 and all(
             [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
             for d in dirs]))
@@ -429,14 +440,14 @@ def all_image_folders_to_lmdb(source, replacing_path=None):
     def get_directory_hierarchy_flat(f):
         """Returns a nested list giving the file hierarchy under folder [f]."""
         result = []
-        if not os.path.isdir(f):
+        if not is_dir(f):
             pass
-        elif not any([os.path.isdir(f"{f}/{d}") for d in os.listdir(f)]):
+        elif not any([is_dir(f"{f}/{d}") for d in os.listdir(f)]):
             result += [f]
         else:
             for d in os.listdir(f):
                 result += get_directory_hierarchy_flat(f"{f}/{d}")
-                result += [f"{f}/{d}"] if os.path.isdir(f"{f}/{d}") else []
+                result += [f"{f}/{d}"] if is_dir(f"{f}/{d}") else []
         return result
 
     replacing_path = os.path.dirname(source) if replacing_path is None else replacing_path
@@ -493,7 +504,7 @@ if __name__ == "__main__":
     ############################################################################
     # Check/modify args
     ############################################################################
-    data_dirs = [os.path.abspath(d.rstrip("/")) for d in args.data_dirs if os.path.isdir(d)]
+    data_dirs = [os.path.abspath(d.rstrip("/")) for d in args.data_dirs if is_dir(d)]
 
     if args.ignore_existing_lmdb:
         data_dirs = [d for d in data_dirs if not "lmdb" in d.lower()]
