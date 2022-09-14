@@ -34,7 +34,7 @@ import string
 
 def is_dir(f):
     try:
-        _ = os.path.listdir(f)
+        _ = os.listdir(f)
         return True
     except NotADirectoryError as e:
         return False
