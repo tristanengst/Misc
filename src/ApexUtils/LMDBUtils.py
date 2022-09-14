@@ -33,6 +33,7 @@ import string
 ################################################################################
 def is_image_folder(f):
     """Returns if folder [f] can be interpreted as an ImageFolder."""
+    f = os.path.abspath(f)
     dirs = [d for d in os.listdir(f) if os.path.isdir(f"{f}/{d}")]
     return (len(dirs) > 0 and all(
             [all([is_image(f"{d}/{sd}") for sd in os.listdir(f"{f}/{d}")])
