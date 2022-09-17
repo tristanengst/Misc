@@ -304,7 +304,8 @@ class LMDBImageFolder(Dataset):
     def __len__(self): return len(self.samples)
 
     def __getitem__(self, idx):
-        idx = int(idx) if idx == int(idx) else None
+        assert idx == int(idx), idx
+        idx = int(idx)
         key, y = self.samples[idx]
 
         # Function inlining to increase speed. Equivalent to read_image_from_lmdb().
