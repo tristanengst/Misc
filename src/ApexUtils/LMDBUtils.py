@@ -38,7 +38,7 @@ def is_dir(f):
         return True
     except NotADirectoryError as e:
         return False
-    
+
     raise ValueError()
 
 
@@ -304,6 +304,7 @@ class LMDBImageFolder(Dataset):
     def __len__(self): return len(self.samples)
 
     def __getitem__(self, idx):
+        idx = int(idx) if idx == int(idx) else None
         key, y = self.samples[idx]
 
         # Function inlining to increase speed. Equivalent to read_image_from_lmdb().
