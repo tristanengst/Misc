@@ -134,9 +134,6 @@ def pretty_print_args(args):
 ################################################################################
 # Image I/O Utilities
 ################################################################################
-plt.rcParams["savefig.bbox"] = "tight"
-plt.tight_layout(pad=0.00)
-
 def make_2d_list_of_tensor(x):
     """Returns [x] as a 2D list where inner element is a CxHxW Tensor.
 
@@ -169,7 +166,7 @@ def show_image_grid(images):
     """
     images = make_2d_list_of_tensor(images)
 
-    fig, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
+    _, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
         nrows=len(images), squeeze=False)
     for i,images_row in enumerate(images):
         for j,image in enumerate(images_row):
