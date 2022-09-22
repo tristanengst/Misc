@@ -16,6 +16,8 @@ def make_device(input):
     """
     if isinstance(input, (list, tuple)):
         return [make_device(x) for x in input]
+    elif isinstance(input, dict):
+        return {k: make_device(v) for k,v in input.items()}
     else:
         return input.to(device)
 

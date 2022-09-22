@@ -169,7 +169,7 @@ def show_image_grid(images):
     """
     images = make_2d_list_of_tensor(images)
 
-    fix, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
+    fig, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
         nrows=len(images), squeeze=False)
     for i,images_row in enumerate(images):
         for j,image in enumerate(images_row):
@@ -183,7 +183,7 @@ def save_image_grid(images, path):
     """
     images = make_2d_list_of_tensor(images)
 
-    fix, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
+    fig, axs = plt.subplots(ncols=max([len(image_row) for image_row in images]),
         nrows=len(images), squeeze=False)
     for i,images_row in enumerate(images):
         for j,image in enumerate(images_row):
