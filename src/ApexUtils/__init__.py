@@ -18,4 +18,5 @@ from .LMDBUtils import *
 from .LPIPSUtils import *
 from .MiscUtils import *
 from .NNUtils import *
+from .TarImageFolder import *
 from .TensorManipulation import *

@@ -134,6 +134,7 @@ def pretty_print_args(args):
 ################################################################################
 # Image I/O Utilities
 ################################################################################
+
 def make_2d_list_of_tensor(x):
     """Returns [x] as a 2D list where inner element is a CxHxW Tensor.
 
