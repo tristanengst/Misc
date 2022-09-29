@@ -232,7 +232,7 @@ class TarImageFolder(TarDataset):
     self.root_in_archive = root_in_archive
 
     # load the archive meta information, and filter the samples
-    super().__init__(archive=archive, transform=False, is_valid_file=is_valid_file)
+    super(TarImageFolder, self).__init__(archive=archive, transform=transform, is_valid_file=is_valid_file)
 
     # assign a label to each image, based on its top-level folder name
     self.class_to_idx = {}
