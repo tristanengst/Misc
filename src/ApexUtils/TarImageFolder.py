@@ -1,5 +1,6 @@
-"""Copied from https://github.com/jotaf98/simple-tar-dataset/blob/master/tardataset.py"""
-
+"""From https://github.com/jotaf98/simple-tar-dataset/blob/master/tardataset.py.
+All credit to the original authors.
+"""
 import tarfile
 from io import BytesIO
 from PIL import Image, ImageFile
@@ -76,13 +77,13 @@ class TarDataset(Dataset):
 
     # also store references to the iterated samples (a subset of the above)
     self.filter_samples(is_valid_file, extensions)
-    
+
     self.transform = transform
 
 
   def filter_samples(self, is_valid_file=None, extensions=('.png', '.jpg', '.jpeg')):
     """Filter the Tar archive's files/folders to obtain the list of samples.
-    
+
     Args:
       extensions (tuple): Extensions (strings starting with a dot), only files
         with these extensions will be iterated. Default: png/jpg/jpeg.
@@ -102,7 +103,7 @@ class TarDataset(Dataset):
 
   def __getitem__(self, index):
     """Return a single sample.
-    
+
     Should be overriden by a subclass to support custom data other than images (e.g.
     class labels). The methods get_image/get_file can be used to read from the Tar
     archive, and a dict of files/folders is held in the property members_by_name.
@@ -110,7 +111,7 @@ class TarDataset(Dataset):
     a tensor if none are specified.
     Args:
       index (int): Index of item.
-    
+
     Returns:
       Tensor: The image.
     """
@@ -199,7 +200,7 @@ class TarImageFolder(TarDataset):
     root/cat/123.png
     root/cat/nsdf3.png
     root/cat/[...]/asd932_.png
-  
+
   Args:
     archive (string or TarDataset): Path to the Tar file containing the dataset.
       Alternatively, pass in a TarDataset object to reuse its cached information;
@@ -231,7 +232,7 @@ class TarImageFolder(TarDataset):
     self.root_in_archive = root_in_archive
 
     # load the archive meta information, and filter the samples
-    super().__init__(archive=archive, transform=transform, is_valid_file=is_valid_file)
+    super().__init__(archive=archive, transform=False, is_valid_file=is_valid_file)
 
     # assign a label to each image, based on its top-level folder name
     self.class_to_idx = {}
@@ -246,7 +247,7 @@ class TarImageFolder(TarDataset):
       # assign increasing label indexes to each class name
       label = self.class_to_idx.setdefault(class_name, len(self.class_to_idx))
       self.targets.append(label)
-    
+
     if len(self.class_to_idx) == 0:
       raise IOError("No classes (top-level folders) were found with the given criteria. The given\n"
         "extensions, is_valid_file or root_in_archive are too strict, or the archive is empty.")
@@ -255,7 +256,7 @@ class TarImageFolder(TarDataset):
       raise IOError(f"Only one class (top-level folder) was found: {next(iter(self.class_to_idx))}.\n"
         f"To choose the correct path in the archive where the label folders are located, specify\n"
         f"root_in_archive in the TarImageFolder's constructor.")
-    
+
     # the inverse mapping is often useful
     self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
 
@@ -273,7 +274,7 @@ class TarImageFolder(TarDataset):
     a tensor if none are specified.
     Args:
       index (int): Index of item.
-    
+
     Returns:
       tuple[Tensor, int]: The image and the corresponding label index.
     """
@@ -281,7 +282,7 @@ class TarImageFolder(TarDataset):
     image = image.convert('RGB')  # if it's grayscale, convert to RGB
     if self.transform:  # apply any custom transforms
       image = self.transform(image)
-    
+
     label = self.targets[index]
 
     return (image, label)

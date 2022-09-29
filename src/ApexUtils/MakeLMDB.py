@@ -383,7 +383,7 @@ def image_folder_to_lmdb(source, out_path, fix_images=True, res=None):
         if (not res is None
             and not np.array(Image.open(image)).shape[:-1] == res):
             _ = Image.open(image).resize((res[0], res[1]), Image.BICUBIC).save(fixed_image)
-            tqdm.write(f"\t\tLOG: Image {unchanged_image} had incorrect size {dims}. In the LMDB file, will be resized to spatial dimensions {res}.")
+            tqdm.write(f"\t\tLOG: Image {unchanged_image} had incorrect size. In the LMDB file, will be resized to spatial dimensions {res}.")
             image = fixed_image
 
         return image
@@ -402,7 +402,7 @@ def image_folder_to_lmdb(source, out_path, fix_images=True, res=None):
     images = {image for image in images if is_image(image)}
     if fix_images:
         fixed_image_dir = f"{os.path.dirname(__file__)}/fixed_images"
-        images = {fix_image(image, fixed_image_dir) for image in tqdm(images,
+        images = {fix_image(image, fixed_image_dir, res=res) for image in tqdm(images,
             desc="Fixing potential issues in images",
             leave=False,
             dynamic_ncols=True)}
