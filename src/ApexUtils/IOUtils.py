@@ -21,12 +21,12 @@ new_line = "\n"
 def data_without_split_or_path(data_str):
     """Returns [data_str] without its split or path."""
     splits = ["train", "val", "test"]
-    if any([data_str.endswith(f"/{s}") for s in splits]):
-        return os.path.basename(os.path.dirname(data_str))
-    elif data_str.endswith(".pt"):
-        return data_str.replace(".pt", "")
+    basename = os.path.basename(data_str)
+    if any([basename.startswith(s) for s in splits]):
+        directory = os.path.dirname(os.path.dirname(data_str))
+        return data_str.replace(directory, "").replace(basename, "").strip("/")
     else:
-        raise ValueError(f"Case for handing data_str {data_str} unknown")
+        return os.path.splitext(os.path.basename(data_str))[0]
 
 def suffix_str(args):
     """Returns the suffix string for [args]."""
