@@ -34,7 +34,10 @@ def tensor_datastructure_to_str(x, indent="", name=None):
         v = [tensor_datastructure_to_str(v, indent + "  ") for v in x]
         s += f"{indent}[----\n" + f"\n".join(v) + f"\n{indent}----]"
     elif isinstance(x, dict):
-        raise NotImplementedError()
+        f"{indent}[----\n"
+        for k,v in x.items():
+            s += f"{key} {tensor_datastructure_to_str(v, indent=indent + '  ')}"
+        s += f"\n".join(v) + f"\n{indent}----]"
     elif isinstance(x, torch.Tensor):
         is_binary = all([v in [0, 1] for v in x.view(-1).tolist()])
         s += f"{indent}[TENSOR {x.shape} | IS BINARY {is_binary}]"
