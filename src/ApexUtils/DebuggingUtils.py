@@ -34,7 +34,7 @@ def tensor_datastructure_to_str(x, indent="", name=None):
         v = [tensor_datastructure_to_str(v, indent + "  ") for v in x]
         s += f"{indent}[----\n" + f"\n".join(v) + f"\n{indent}----]"
     elif isinstance(x, dict):
-        f"{indent}[----\n"
+        s += f"{indent}[----\n"
         s += "\n".join([f"{indent}{k:20} {tensor_datastructure_to_str(v, indent=indent + '  ')}" for k,v in x.items()])
         s += f"\n{indent}----]"
     elif isinstance(x, torch.Tensor):
