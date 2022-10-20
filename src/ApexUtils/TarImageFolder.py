@@ -248,7 +248,7 @@ class TarImageFolder(TarDataset):
       label = self.class_to_idx.setdefault(class_name, len(self.class_to_idx))
       self.targets.append(label)
 
-    self.classes = self.class_to_idx.values()
+    self.classes = list(self.class_to_idx.values())
 
     if len(self.class_to_idx) == 0:
       raise IOError("No classes (top-level folders) were found with the given criteria. The given\n"
