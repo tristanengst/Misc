@@ -32,10 +32,10 @@ class KOrKMinusOne:
     shuffle -- whether or not to shuffle the order in which elements of [idx]
                 are returned, while maintaining the condition
     """
-    def __init__(self, idxs, shuffle=False):
-        self.idxs = idxs
-        self.counter = 0
+    def __init__(self, idxs, shuffle=False):   
         self.shuffle = shuffle
+        self.idxs = random.sample(idxs, k=len(idxs)) if shuffle else idxs
+        self.counter = 0
 
     def pop(self):
         if self.counter == len(self.idxs):
