@@ -19,10 +19,10 @@ def get_lpips_weights():
     """Downloads the LPIPS VGG16 weights. Our only contribution to this file!"""
     file = f"{path.dirname(f'{__file__}')}/vgg_lpips_weights.pth"
     if not path.exists(file):
-        url = "https://drive.google.com/u/0/uc?id=1IQCDHxO-cYnFMx1hATjgSGQdO-_pB9nb&export=download"
+        url = "https://drive.google.com/file/d/1aueENGhT-NaiTxkZsP96uzbBY8Uz4_Ln/view"
         file = f"{path.dirname(f'{__file__}')}/vgg_lpips_weights.pth"
         try:
-            gdown.download(url, file, quiet=False)
+            gdown.download(url, file, quiet=False, fuzzy=True)
         except OSError as e:
             tqdm.write(f"{e}\n\nMost likely you couldn't download the LPIPS weights because you're offline.")
             raise e
@@ -125,3 +125,6 @@ class LPIPSFeats(nn.Module):
         ]
 
         return [l.flatten(start_dim=1) for l in feats]
+
+if __name__ == "__main__":
+    _ = LPIPSFeats()
