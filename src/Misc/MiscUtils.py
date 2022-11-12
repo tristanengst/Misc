@@ -3,6 +3,18 @@ import numpy as np
 import random
 from tqdm import tqdm
 
+
+def sample(select_from, k=-1, seed=0):
+    """Returns [k] items sampled without replacement from [select_from] with
+    seed [seed], without changing the internal seed of the program. This
+    explicitly ensures reproducability.
+    """
+    state = random.getstate()
+    random.seed(seed)
+    result = random.sample(select_from, k=k)
+    random.setstate(state)
+    return result
+
 def set_seed(seed):
     """Seeds the program to use seed [seed]."""
     if isinstance(seed, int):
