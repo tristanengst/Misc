@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
 
-from MiscUtils import sample
+from .MiscUtils import sample
 
 def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
     """Returns a Subset of [dataset] giving a n-shot n-way task.
