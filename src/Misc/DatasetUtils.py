@@ -3,6 +3,7 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
+import h5py
 
 from .MiscUtils import sample, flatten
 
@@ -98,7 +99,7 @@ class XYDataset(Dataset):
         y = y if self.target_transform is None else self.target_transform(y)
         return x,y
 
-def get_image_channel_means_stds(dataset, args):
+def get_image_channel_means_stds(dataset, num_workers=8):
     """Returns an (mu, sigma) tuple where [mu] and [sigma] are tensors in which
     the ith element gives the respective ith mean and standard deviation of the
     ith channel of images in [dataset].
@@ -108,7 +109,7 @@ def get_image_channel_means_stds(dataset, args):
     bs      -- batch size to use in the computation
     """
     loader = DataLoader(dataset,
-        num_workers=args.num_workers,
+        num_workers=num_workers,
         batch_size=1024,
         pin_memory=True)
 
