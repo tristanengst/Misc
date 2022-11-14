@@ -27,18 +27,11 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
     else:
         classes = set(classes)
 
-    print(classes)
-
     classes = {dataset.class_to_idx[c] for c in classes}
-
-    print(classes)
-    
     class2idxs = defaultdict(lambda: [])
     for idx,t in enumerate(dataset.targets):
         if t in classes:
             class2idxs[t].append(idx)
-
-    print(class2idxs)
 
     if not n_shot in use_all_list:
         try:
@@ -51,17 +44,8 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
             raise e
   
     indices = flatten([idxs for idxs in class2idxs.values()])
-
-    print(indices)
-
     dataset = Subset(dataset, indices=indices)
-
-    print(dataset)
-
     class2idx = {c: idx for idx,c in enumerate(sorted(classes))}
-
-    print(class2idx)
-
     return XYDataset(dataset,
         target_transform=lambda c: class2idx[c],
         classes=classes)    
