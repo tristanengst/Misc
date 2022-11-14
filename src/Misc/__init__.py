@@ -12,6 +12,7 @@ torch.backends.cudnn.benchmark = True
 os.environ["WANDB_CONSOLE"] = "off"
 
 # Import remaining code
+from .DatasetUtils import *
 from .DebuggingUtils import *
 from .IOUtils import *
 from .LMDBUtils import *
