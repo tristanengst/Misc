@@ -24,6 +24,7 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
     if classes in use_all_list:
         classes = set(dataset.classes)
     elif classes is None:
+        n_way = len(dataset.classes) if n_way in use_all_list else n_way
         classes = set(sample(dataset.classes, k=n_way, seed=seed))
     else:
         classes = set(classes)
