@@ -30,6 +30,9 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
     print(classes)
 
     classes = {dataset.class_to_idx[c] for c in classes}
+
+    print(classes)
+    
     class2idxs = defaultdict(lambda: [])
     for idx,t in enumerate(dataset.targets):
         if t in classes:
