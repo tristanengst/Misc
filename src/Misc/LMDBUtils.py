@@ -419,6 +419,10 @@ def image_folder_to_lmdb(source, out_path, fix_images=True, res=None):
     # Create the LMDB file.
     ############################################################################
     tqdm.write(f"\tLOG: Will write output LMDB file to {out_path}")
+    
+    if not os.path.exists(os.path.dirname(out_path)):
+        os.makedirs(os.path.dirname(outpath))
+
     env = lmdb.open(out_path, map_size=num_bytes * 10)
     for image in tqdm(images,
         desc="Writing to LMDB file",
