@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "apex-utils"
-version = "0.0.7"
+name = "misc"
+version = "6.283"
 authors = [
   { name="Tristan Engst", email="tristanengst@gmail.com" },
 ]
@@ -20,7 +20,7 @@ classifiers = [
 
 [options]
 install_requires = [
-    "torch>=1.10",
+    "torch>=1.13",
     "torchvision",
     "matplotlib",
     "gdown",
@@ -29,4 +29,4 @@ install_requires = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/tristanengst/apex-utils"
+"Homepage" = "https://github.com/tristanengst/Misc"
