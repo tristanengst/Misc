@@ -81,7 +81,7 @@ def dict_to_json(dictionary, f):
 
 def json_to_dict(f):
     """Returns the dictionary given by JSON file [f]."""
-    if isinstance(f, str) and json_file.endswith(".json") and os.path.exists(f):
+    if isinstance(f, str) and f.endswith(".json") and os.path.exists(f):
         with open(f, "r") as json_file:
             return json.load(json_file)
     else:
