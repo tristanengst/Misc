@@ -10,7 +10,11 @@ def sample(select_from, k=-1, seed=0):
     """
     state = random.getstate()
     random.seed(seed)
-    result = random.sample(select_from, k=k)
+    try:
+        result = random.sample(select_from, k=k)
+    except ValueError as e:
+        tqdm.write(f"Tried to sample {k} from {len(select_from)} things")
+        raise e
     random.setstate(state)
     return result
 
