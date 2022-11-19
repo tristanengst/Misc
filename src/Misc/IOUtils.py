@@ -85,7 +85,7 @@ def json_to_dict(f):
         with open(f, "r") as json_file:
             return json.load(json_file)
     else:
-        return ValueError(f"Can not read dictionary from {f}")
+        raise ValueError(f"Can not read dictionary from {f}")
 
 def save_checkpoint(dictionary, path):
     """Saves contents of [dictionary] along with random states to [file]."""

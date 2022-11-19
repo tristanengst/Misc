@@ -6,15 +6,17 @@ from torchvision import transforms
 import h5py
 
 from .MiscUtils import sample, flatten
-
-def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
+def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0,   
+    fewer_shots_if_needed=False):
     """Returns a Subset of [dataset] giving a n-shot n-way task.
 
     Args:
-    dataset -- ImageFolder-like dataset
-    n_way   --
-    n_shot
-    classes --
+    dataset                 -- ImageFolder-like dataset
+    n_way                   -- number of classes to use
+    n_shot                  -- number of shots to use
+    classes                 -- classes to use (overrides [n_way])
+    fewer_shots_if_needed   -- if [dataset] doesn't have all the [n_shots] for a
+                                class, use less than [n_shots]
     """
     use_all_list = ["all", -1]
     
@@ -25,7 +27,7 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
         classes = set(dataset.classes)
     elif classes is None:
         n_way = len(dataset.classes) if n_way in use_all_list else n_way
-        classes = set(sample(dataset.classes, k=n_way, seed=seed))
+        classes = set(Misc.sample(dataset.classes, k=n_way, seed=seed))
     else:
         classes = set(classes)
 
@@ -36,8 +38,9 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
             class2idxs[t].append(idx)
 
     if not n_shot in use_all_list:
+        n_shot_fn = lambda x: (min(len(x), n_shot) if fewer_shots_if_needed else n_shot)
         try:
-            class2idxs = {c: sample(idxs, k=n_shot, seed=seed)
+            class2idxs = {c: Misc.sample(idxs, k=n_shot_fn(idxs), seed=seed)
                 for c,idxs in class2idxs.items()}
         except ValueError as e:
             class2n_idxs = "\n".join([f"\t{c}: {len(idxs)}"
@@ -45,60 +48,69 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0):
             tqdm.write(f"Likely --val_n_shot asked for more examples than are available | val_n_shot {n_shot} | class to num idxs: {class2n_idxs}")
             raise e
   
-    indices = flatten([idxs for idxs in class2idxs.values()])
-    dataset = Subset(dataset, indices=indices)
-    class2idx = {c: idx for idx,c in enumerate(sorted(classes))}
-    return XYDataset(dataset,
-        target_transform=lambda c: class2idx[c],
-        classes=classes)    
-        
-class XYDataset(Dataset):
-    """A simple dataset returning examples of the form (transform(x), y)."""
+    indices = Misc.flatten([idxs for idxs in class2idxs.values()])
+    return ImageFolderSubset(dataset, indices=indices)
 
-    def __init__(self, data, transform=None, target_transform=None, 
-        normalize=False, classes=None):
-        """Args:
-        data        -- a sequence of (x,y) pairs
-        transform   -- the transform to apply to each returned x-value
-        """
-        super(XYDataset, self).__init__()
+class ImageFolderSubset(Dataset):
+    """Subset of an ImageFolder that preserves key attributes. Besides preserving ImageFolder-like attributes, the key improvement over a regular Subset is a target2idx dictionary that maps a target returned from [data] to a number in
+    [0, len(classes)) which is necessary for classification.
+
+    Doing this efficiently is oddly non-trivial.
+
+    Besides maintaining [targets], [classes] and [class_to_idx] attributes,
+    there are several key constraints:
+    1) Every element of the [class_to_idx.values()] is a member of [targets]. As
+        [targets] are integers in [0...N-1], this means that neither [targets]
+        nor [class_to_idx] this attribute is not preserved by constructing an ImageFolderSubset
+    2) Constructing this subset yields a dataset whose [classes] attribute is a
+        subset of the same attribute of [data]
+
+    With this constraint met, it's possible to construct this dataset on top of
+    itself any number of times.
+
+    Args:
+    data    -- ImageFolder-like dataset
+    indices -- list giving subset indices
+    """
+
+    def __init__(self, data, indices):
+        super(ImageFolderSubset, self).__init__()
         self.data = data
-        self.transform = transform
-        self.target_transform = target_transform
-        self.normalize = normalize
+        self.root = self.data.root
+        self.indices = indices
+
+        idxs_set = set(indices)
+
+        # Mapping from indices we care about to the targets they have in [data]
+        data_idx2target = {idx: t
+            for idx,t in enumerate(data.targets)
+            if idx in idxs_set}
         
-        if self.normalize:
-            means, stds = get_image_channel_means_stds(XYDataset(self.data))
-            self.transform = transforms.Compose([transform,
-                transforms.Normalize(means, stds, inplace=True)])
+        # Unique targets in subset of data
+        data_targets = set(data_idx2target.values())
 
-        if hasattr(self.data, "class_to_idx"):
-            self.classes = list(self.data.class_to_idx.keys())
-            self.class_to_idx = deepcopy(self.data.class_to_idx)
-        else:
-            pass
+        # Mapping from unique targets in subset of data to their class
+        data_target2class = {t: c for c,t in data.class_to_idx.items()
+            if t in data_targets}
 
-        if hasattr(self.data, "classes"):
-            self.classes = deepcopy(self.data.classes)
-        elif not classes is None:
-            self.classes = classes
-        else:
-            loader = DataLoader(self.data, batch_size=128, num_workers=8)
-            self.classes = set()
-            for _,y in tqdm(loader,
-                desc="Getting XYDataset class information",
-                leave=False):
-                self.classes |= set(y.tolist())
-            
-            self.classes = list(sorted(self.classes))
+        # Mapping from indices we care about to their classes
+        data_idx2class = {idx: data_target2class[t]
+            for idx,t in enumerate(data.targets)
+            if idx in idxs_set}
 
-    def __len__(self): return len(self.data)
+        # Subset of the classes in [data]
+        self.classes = set(data_target2class.values())
+        self.class_to_idx = {c: idx for idx,c in enumerate(sorted(self.classes))}
+        self.data_target2idx = {t: idx for idx,t in enumerate(sorted(data_targets))}
+        self.targets = [self.data_target2idx[t] for t in data_idx2target.values()]
+
+    def __str__(self): return f"{self.__class__.__name__} [root={self.root} | length={self.__len__()}]"
+
+    def __len__(self): return len(self.indices)
 
     def __getitem__(self, idx):
-        x, y = self.data[idx]
-        x = x if self.transform is None else self.transform(x)
-        y = y if self.target_transform is None else self.target_transform(y)
-        return x,y
+        x,y = self.data[self.indices[idx]]
+        return x, self.data_target2idx[y]
 
 def get_image_channel_means_stds(dataset, num_workers=8):
     """Returns an (mu, sigma) tuple where [mu] and [sigma] are tensors in which
