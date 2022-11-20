@@ -80,6 +80,9 @@ class TarDataset(Dataset):
 
     self.transform = transform
 
+    # ImageFolder compatibility!
+    self.root = archive
+
 
   def filter_samples(self, is_valid_file=None, extensions=('.png', '.jpg', '.jpeg')):
     """Filter the Tar archive's files/folders to obtain the list of samples.
