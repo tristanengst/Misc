@@ -229,6 +229,9 @@ class TarImageFolder(TarDataset):
   """
   def __init__(self, archive, transform=to_tensor, extensions=('.png', '.jpg', '.jpeg'),
     is_valid_file=None, root_in_archive=''):
+    # ImageFolder compatibility!
+    self.root = archive
+    
     # ensure the root path ends with a slash
     if root_in_archive and not root_in_archive.endswith('/'):
       root_in_archive = root_in_archive + '/'
