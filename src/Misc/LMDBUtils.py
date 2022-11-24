@@ -282,8 +282,8 @@ class LMDBImageFolder(Dataset):
             keys = sorted([k for k in keys.decode("ascii").split(",")])
 
         self.classes = sorted({os.path.dirname(k) for k in keys})
-        self.class2idx = {cls: idx for idx,cls in enumerate(self.classes)}
-        self.samples = [(k, self.class2idx[os.path.dirname(k)]) for k in keys]
+        self.class_to_idx = {cls: idx for idx,cls in enumerate(self.classes)}
+        self.samples = [(k, self.class_to_idx[os.path.dirname(k)]) for k in keys]
         self.targets = [s[1] for s in self.samples]
 
         self.transform = transform
