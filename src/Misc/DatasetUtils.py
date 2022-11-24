@@ -27,7 +27,7 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0,
         classes = set(dataset.classes)
     elif classes is None:
         n_way = len(dataset.classes) if n_way in use_all_list else n_way
-        classes = set(Misc.sample(dataset.classes, k=n_way, seed=seed))
+        classes = set(sample(dataset.classes, k=n_way, seed=seed))
     else:
         classes = set(classes)
 
@@ -40,7 +40,7 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0,
     if not n_shot in use_all_list:
         n_shot_fn = lambda x: (min(len(x), n_shot) if fewer_shots_if_needed else n_shot)
         try:
-            class2idxs = {c: Misc.sample(idxs, k=n_shot_fn(idxs), seed=seed)
+            class2idxs = {c: sample(idxs, k=n_shot_fn(idxs), seed=seed)
                 for c,idxs in class2idxs.items()}
         except ValueError as e:
             class2n_idxs = "\n".join([f"\t{c}: {len(idxs)}"
