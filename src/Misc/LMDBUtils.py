@@ -281,6 +281,7 @@ class LMDBImageFolder(Dataset):
             keys = txn.get("keys".encode("ascii"))
             keys = sorted([k for k in keys.decode("ascii").split(",")])
 
+        self.root = source
         self.classes = sorted({os.path.dirname(k) for k in keys})
         self.class_to_idx = {cls: idx for idx,cls in enumerate(self.classes)}
         self.samples = [(k, self.class_to_idx[os.path.dirname(k)]) for k in keys]
