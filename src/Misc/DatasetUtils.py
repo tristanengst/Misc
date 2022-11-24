@@ -48,7 +48,7 @@ def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0,
             tqdm.write(f"Likely --val_n_shot asked for more examples than are available | val_n_shot {n_shot} | class to num idxs: {class2n_idxs}")
             raise e
   
-    indices = Misc.flatten([idxs for idxs in class2idxs.values()])
+    indices = flatten([idxs for idxs in class2idxs.values()])
     return ImageFolderSubset(dataset, indices=indices)
 
 class ImageFolderSubset(Dataset):
