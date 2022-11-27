@@ -7,7 +7,6 @@ Some is modified from CamNet:
 https://github.com/niopeng/CAM-Net
 """
 from os import path
-import gdown
 from tqdm import tqdm
 
 from collections import namedtuple
@@ -22,6 +21,7 @@ def get_lpips_weights():
         url = "https://drive.google.com/file/d/1aueENGhT-NaiTxkZsP96uzbBY8Uz4_Ln/view"
         file = f"{path.dirname(f'{__file__}')}/vgg_lpips_weights.pth"
         try:
+            import gdown
             gdown.download(url, file, quiet=False, fuzzy=True)
         except OSError as e:
             tqdm.write(f"{e}\n\nMost likely you couldn't download the LPIPS weights because you're offline.")
