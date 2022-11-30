@@ -6,7 +6,6 @@ import os
 ################################################################################
 # Set up CUDA usage
 device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
-torch.backends.cudnn.benchmark = True
 
 # Turn off WandB console logging, since we don't need it and it breaks TQDM.
 os.environ["WANDB_CONSOLE"] = "off"
