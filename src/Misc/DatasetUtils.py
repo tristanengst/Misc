@@ -3,7 +3,6 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import transforms
-import h5py
 
 from .MiscUtils import sample, flatten
 def get_fewshot_dataset(dataset, n_way=5, n_shot=5, classes=None, seed=0,   
